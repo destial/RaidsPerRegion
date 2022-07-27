@@ -3,7 +3,7 @@ version: 2.2
 api-version: 1.18
 author: ShermansWorld
 main: me.ShermansWorld.RaidsPerRegion.Main
-depend: [WorldEdit, WorldGuard, MythicMobs]
+depend: [WorldEdit, WorldGuard, MythicMobs,PlaceholderAPI]
 
 commands:
   raid:

@@ -15,7 +15,7 @@ public class RaidsPerRegionCommands implements CommandExecutor {
 
 	public RaidsPerRegionCommands(Main plugin) {
 		this.plugin = plugin;
-		plugin.getCommand("raidsperregion").setExecutor((CommandExecutor) this); // command to run in chat
+		plugin.getCommand("raidsperregion").setExecutor(this); // command to run in chat
 	}
 	
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {

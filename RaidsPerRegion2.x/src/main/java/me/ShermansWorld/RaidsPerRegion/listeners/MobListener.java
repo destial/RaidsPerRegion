@@ -18,8 +18,6 @@ public final class MobListener implements Listener {
 	
 	@EventHandler
 	public void onMythicMobDead(MythicMobDeathEvent event) {
-		
-		
 		if (Raid.region != null || Raid.town != null) { // if a raid is happening
 			AbstractEntity mobEntity = event.getMob().getEntity();
 			if (Raid.MmEntityList.contains(mobEntity)) {

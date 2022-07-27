@@ -2,7 +2,6 @@ package me.ShermansWorld.RaidsPerRegion.Raid;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -15,9 +14,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
-import org.bukkit.scoreboard.Scoreboard;
 
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Town;
@@ -42,14 +38,14 @@ public class Raid {
 	public static int countdown;
 	public static String tempStr = "";
 	public static String tempStr2 = "";
-	public static Map<String, String> scoreboardPlayerData = new HashMap<String, String>();
+	public static Map<String, String> scoreboardPlayerData = new HashMap<>();
 	public static int minutes;
 	public static boolean hasMobsOn;
 	public static boolean isScheduled = false;
 
 	// public variables used in Listener Class
 	public static List<Player> playersInRegion = new ArrayList<>();
-	public static Map<String, Integer> raidKills = new HashMap<String, Integer>();
+	public static Map<String, Integer> raidKills = new HashMap<>();
 	public static int otherDeaths = 0;
 	public static List<AbstractEntity> MmEntityList = new ArrayList<>();
 	public static int mobsSpawned = 0;
@@ -68,11 +64,11 @@ public class Raid {
 	public static int maxMobsPerPlayer = 10;
 	public static double spawnRateMultiplier = 1.0;
 	public static long conversionSpawnRateMultiplier = 10;
+	public static int mobsAlive;
 
 	// spawnMobs Method
 	public static void spawnMobs(Random rand, List<Location> regionPlayerLocations, int scoreCounter,
-			List<String> mMMobNames, List<Double> chances, List<Integer> priorities, int maxMobsPerPlayer, int mobLevel,
-			Scoreboard board, Objective objective) {
+			List<String> mMMobNames, List<Double> chances, List<Integer> priorities, int maxMobsPerPlayer, int mobLevel) {
 
 		for (int j = 0; j < Raid.playersInRegion.size(); j++) {
 			int randomPlayerIdx = rand.nextInt(Raid.playersInRegion.size());
@@ -84,7 +80,7 @@ public class Raid {
 			int spawnRate = rand.nextInt(3); // 1/3 chance of spawning zombie at this player per cycle. possibilities:
 												// 0, 1 or 2
 			int numPlayersInRegion = Raid.playersInRegion.size();
-			int mobsAlive = Raid.mobsSpawned - scoreCounter - Raid.otherDeaths;
+			Raid.mobsAlive = Raid.mobsSpawned - scoreCounter - Raid.otherDeaths;
 
 			if (mobsAlive >= numPlayersInRegion * maxMobsPerPlayer) {
 				Raid.maxMobsReached = true;
@@ -131,14 +127,14 @@ public class Raid {
 						if (!Raid.region.contains(mobSpawnLocation.getBlockX(), mobSpawnLocation.getBlockY(),
 								mobSpawnLocation.getBlockZ())) {
 							spawnMobs(rand, regionPlayerLocations, maxPriorityIdx, mMMobNames, chances, hitIdxs,
-									maxPriorityIdx, maxPriorityIdx, board, objective);
+									maxPriorityIdx, maxPriorityIdx);
 							return;
 						}
 					}
 					if (Raid.town != null) {
 						if (!TownyHelper.checkTown(mobSpawnLocation)) {
 							spawnMobs(rand, regionPlayerLocations, maxPriorityIdx, mMMobNames, chances, hitIdxs,
-									maxPriorityIdx, maxPriorityIdx, board, objective);
+									maxPriorityIdx, maxPriorityIdx);
 							return;
 						}
 					}
@@ -149,138 +145,106 @@ public class Raid {
 					AbstractEntity entityOfMob = mob.getEntity();
 					Raid.MmEntityList.add(entityOfMob);
 					Raid.mobsSpawned++;
-
-				} catch (NullPointerException e) {
-				}
-
+				} catch (NullPointerException ignored) {}
 			}
-			board.resetScores(Raid.tempStr2);
 			Raid.totalKills = scoreCounter;
-			Score tempTotalScore = objective
-					.getScore(ChatColor.AQUA + "Total Kills:      " + String.valueOf(Raid.totalKills));
-			tempTotalScore.setScore(3);
-			Raid.tempStr2 = ChatColor.AQUA + "Total Kills:      " + String.valueOf(Raid.totalKills);
+			Raid.tempStr2 = ChatColor.AQUA + "Total Kills:      " + Raid.totalKills;
 		}
 	}
 
 	// checkPlayersInTown Method
-	public static void checkPlayersInTown(Scoreboard board, Objective objective, List<String> mMMobNames,
+	public static void checkPlayersInTown(List<String> mMMobNames,
 			List<Double> chances, List<Integer> priorities, int maxMobsPerPlayer, long conversionSpawnRateMultiplier,
 			int mobLevel) {
 		int[] id = { 0 };
 		Random rand = new Random();
-		id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(Main.getInstance(), new Runnable() {
-			public void run() {
-				if (Raid.timeReached == true) {
-					Bukkit.getServer().getScheduler().cancelTask(id[0]);
-				} else {
-					List<Player> playerList = new ArrayList<>(Bukkit.getOnlinePlayers());
-					Raid.playersInRegion = new ArrayList<>();
-					List<Location> regionPlayerLocations = new ArrayList<>();
-					int scoreCounter = 0;
-					Town currentTown = null; // placeholder
-					for (int i = 0; i < playerList.size(); i++) {
-						try {
-							currentTown = WorldCoord.parseWorldCoord(playerList.get(i).getLocation()).getTownBlock()
-									.getTown();
-						} catch (NotRegisteredException e) {
-							// e.printStackTrace();
-							// playerList.get(i).sendMessage("You are not in a town!");
-						}
-						if (currentTown == Raid.town) {
-							Raid.playersInRegion.add(playerList.get(i));
-							regionPlayerLocations.add(playerList.get(i).getLocation());
-						}
+		id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(Main.getInstance(), () -> {
+			if (Raid.timeReached) {
+				Bukkit.getServer().getScheduler().cancelTask(id[0]);
+			} else {
+				List<Player> playerList = new ArrayList<>(Bukkit.getOnlinePlayers());
+				Raid.playersInRegion = new ArrayList<>();
+				List<Location> regionPlayerLocations = new ArrayList<>();
+				int scoreCounter = 0;
+				Town currentTown = null; // placeholder
+				for (int i = 0; i < playerList.size(); i++) {
+					try {
+						currentTown = WorldCoord.parseWorldCoord(playerList.get(i).getLocation()).getTownBlock()
+								.getTown();
+					} catch (NotRegisteredException e) {
+						// e.printStackTrace();
+						// playerList.get(i).sendMessage("You are not in a town!");
 					}
-
-					// Add up scores for all players in region
-					for (int n = 0; n < Raid.playersInRegion.size(); n++) {
-
-						// Make sure the player is mapped in raidKills or it will return a null error
-
-						if (Raid.playersInRegion.get(n).getScoreboard() != board) {
-							Raid.playersInRegion.get(n).setScoreboard(board);
-						}
-
-						if (Raid.raidKills.containsKey(Raid.playersInRegion.get(n).getName())) {
-							if (Raid.scoreboardPlayerData.containsKey(Raid.playersInRegion.get(n).getName())) {
-								board.resetScores(Raid.scoreboardPlayerData.get(Raid.playersInRegion.get(n).getName()));
-							}
-							Score score = objective.getScore(ChatColor.YELLOW + Raid.playersInRegion.get(n).getName()
-									+ ":    " + Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
-							Raid.scoreboardPlayerData.put(Raid.playersInRegion.get(n).getName(),
-									ChatColor.YELLOW + Raid.playersInRegion.get(n).getName() + ":    "
-											+ Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
-							score.setScore(0);
-							scoreCounter += Raid.raidKills.get(Raid.playersInRegion.get(n).getName());
-						}
-
+					if (currentTown == Raid.town) {
+						Raid.playersInRegion.add(playerList.get(i));
+						regionPlayerLocations.add(playerList.get(i).getLocation());
 					}
-					// Spawn mobs for all players in region
-					Raid.spawnMobs(rand, regionPlayerLocations, scoreCounter, mMMobNames, chances, priorities,
-							maxMobsPerPlayer, mobLevel, board, objective);
+				}
+
+				// Add up scores for all players in region
+				for (int n = 0; n < Raid.playersInRegion.size(); n++) {
+
+					// Make sure the player is mapped in raidKills or it will return a null error
+
+
+					if (Raid.raidKills.containsKey(Raid.playersInRegion.get(n).getName())) {
+						Raid.scoreboardPlayerData.put(Raid.playersInRegion.get(n).getName(),
+								ChatColor.YELLOW + Raid.playersInRegion.get(n).getName() + ":    "
+										+ Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
+
+						scoreCounter += Raid.raidKills.get(Raid.playersInRegion.get(n).getName());
+					}
 
 				}
+				// Spawn mobs for all players in region
+				Raid.spawnMobs(rand, regionPlayerLocations, scoreCounter, mMMobNames, chances, priorities,
+						maxMobsPerPlayer, mobLevel);
+
 			}
 		}, 0L, 20L / conversionSpawnRateMultiplier);
 	}
 
 	// checkPlayersInRegion Method
-	public static void checkPlayersInRegion(Scoreboard board, Objective objective, List<String> mMMobNames,
+	public static void checkPlayersInRegion(List<String> mMMobNames,
 			List<Double> chances, List<Integer> priorities, int maxMobsPerPlayer, long conversionSpawnRateMultiplier,
 			int mobLevel) {
 		int[] id = { 0 };
 		Random rand = new Random();
-		id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(Main.getInstance(), new Runnable() {
-			public void run() {
-				if (Raid.timeReached == true) {
-					Bukkit.getServer().getScheduler().cancelTask(id[0]);
-				} else {
-					List<Player> playerList = new ArrayList<>(Bukkit.getOnlinePlayers());
-					Raid.playersInRegion = new ArrayList<>();
-					List<Location> onlinePlayerLocations = new ArrayList<>();
-					List<Location> regionPlayerLocations = new ArrayList<>();
-					int scoreCounter = 0;
+		id[0] = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(Main.getInstance(), () -> {
+			if (Raid.timeReached) {
+				Bukkit.getServer().getScheduler().cancelTask(id[0]);
+			} else {
+				List<Player> playerList = new ArrayList<>(Bukkit.getOnlinePlayers());
+				Raid.playersInRegion = new ArrayList<>();
+				List<Location> onlinePlayerLocations = new ArrayList<>();
+				List<Location> regionPlayerLocations = new ArrayList<>();
+				int scoreCounter = 0;
 
-					for (int i = 0; i < playerList.size(); i++) {
-						onlinePlayerLocations.add(playerList.get(i).getLocation());
-						if (Raid.region.contains(onlinePlayerLocations.get(i).getBlockX(),
-								onlinePlayerLocations.get(i).getBlockY(), onlinePlayerLocations.get(i).getBlockZ())) {
-							Raid.playersInRegion.add(playerList.get(i));
-							regionPlayerLocations.add(playerList.get(i).getLocation());
-						}
+				for (int i = 0; i < playerList.size(); i++) {
+					onlinePlayerLocations.add(playerList.get(i).getLocation());
+					if (Raid.region.contains(onlinePlayerLocations.get(i).getBlockX(),
+							onlinePlayerLocations.get(i).getBlockY(), onlinePlayerLocations.get(i).getBlockZ())) {
+						Raid.playersInRegion.add(playerList.get(i));
+						regionPlayerLocations.add(playerList.get(i).getLocation());
 					}
+				}
 
-					// Add up scores for all players in region
-					for (int n = 0; n < Raid.playersInRegion.size(); n++) {
-
-						// Make sure the player is mapped in raidKills or it will return a null error
-
-						if (Raid.playersInRegion.get(n).getScoreboard() != board) {
-							Raid.playersInRegion.get(n).setScoreboard(board);
-						}
-
-						if (Raid.raidKills.containsKey(Raid.playersInRegion.get(n).getName())) {
-							if (Raid.scoreboardPlayerData.containsKey(Raid.playersInRegion.get(n).getName())) {
-								board.resetScores(Raid.scoreboardPlayerData.get(Raid.playersInRegion.get(n).getName()));
-							}
-							Score score = objective.getScore(ChatColor.YELLOW + Raid.playersInRegion.get(n).getName()
-									+ ":    " + Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
-							Raid.scoreboardPlayerData.put(Raid.playersInRegion.get(n).getName(),
-									ChatColor.YELLOW + Raid.playersInRegion.get(n).getName() + ":    "
-											+ Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
-							score.setScore(0);
-							scoreCounter += Raid.raidKills.get(Raid.playersInRegion.get(n).getName());
-
-						}
+				// Add up scores for all players in region
+				for (int n = 0; n < Raid.playersInRegion.size(); n++) {
+					if (Raid.raidKills.containsKey(Raid.playersInRegion.get(n).getName())) {
+						Raid.scoreboardPlayerData.put(Raid.playersInRegion.get(n).getName(),
+								ChatColor.YELLOW + Raid.playersInRegion.get(n).getName() + ":    "
+										+ Raid.raidKills.get(Raid.playersInRegion.get(n).getName()));
+						scoreCounter += Raid.raidKills.get(Raid.playersInRegion.get(n).getName());
 
 					}
-
-					// Spawn mobs for all players in region
-					Raid.spawnMobs(rand, regionPlayerLocations, scoreCounter, mMMobNames, chances, priorities,
-							maxMobsPerPlayer, mobLevel, board, objective);
 
 				}
+
+				// Spawn mobs for all players in region
+				Raid.spawnMobs(rand, regionPlayerLocations, scoreCounter, mMMobNames, chances, priorities,
+						maxMobsPerPlayer, mobLevel);
+
 			}
 		}, 0L, 20L / conversionSpawnRateMultiplier);
 	}
@@ -294,16 +258,17 @@ public class Raid {
 		Raid.playersInRegion = new ArrayList<>();
 		Raid.MmEntityList = new ArrayList<>();
 		Raid.mMMobNames = new ArrayList<>();
-		Raid.raidKills = new HashMap<String, Integer>();
+		Raid.raidKills = new HashMap<>();
 		Main.cancelledRaid = false;
 		Raid.runOnce = false;
 		Raid.priorities = new ArrayList<>();
 		Raid.chances = new ArrayList<>();
 		Raid.mMMobNames = new ArrayList<>();
 		Raid.otherDeaths = 0;
-		Raid.scoreboardPlayerData = new HashMap<String, String>();
+		Raid.scoreboardPlayerData = new HashMap<>();
 		Raid.bossSpawned = false;
 		Raid.isScheduled = false;
+		Raid.mobsAlive = 0;
 	}
 
 	// getMobsFromConfig Method
@@ -311,17 +276,12 @@ public class Raid {
 		Set<String> mmMobs = Main.getInstance().getConfig().getConfigurationSection("RaidMobs").getKeys(false); // only
 																												// gets
 		// top keys
-		Iterator<String> it = mmMobs.iterator();
 		// converts set to arraylist
-		while (it.hasNext()) {
-			Raid.mMMobNames.add(it.next());
-		}
+		Raid.mMMobNames.addAll(mmMobs);
 		// gets chance and priority data for each mob name
 		for (int k = 0; k < Raid.mMMobNames.size(); k++) {
-			double chance = Main.getInstance().getConfig().getConfigurationSection("RaidMobs")
-					.getDouble(Raid.mMMobNames.get(k) + ".Chance");
-			int priority = Main.getInstance().getConfig().getConfigurationSection("RaidMobs")
-					.getInt(Raid.mMMobNames.get(k) + ".Priority");
+			double chance = Main.getInstance().getConfig().getConfigurationSection("RaidMobs").getDouble(Raid.mMMobNames.get(k) + ".Chance");
+			int priority = Main.getInstance().getConfig().getConfigurationSection("RaidMobs").getInt(Raid.mMMobNames.get(k) + ".Priority");
 			Raid.chances.add(chance);
 			Raid.priorities.add(priority);
 		}
@@ -425,10 +385,8 @@ public class Raid {
 
 				if (Main.getInstance().getConfig().getBoolean("UseWinLossCommands")) {
 					try {
-						List<String> globalCommands = Main.getInstance().getConfig()
-								.getStringList("RaidWinCommands.Global");
-						for (int i = 0; i < globalCommands.size(); i++) {
-							String command = globalCommands.get(i);
+						List<String> globalCommands = Main.getInstance().getConfig().getStringList("RaidWinCommands.Global");
+						for (String command : globalCommands) {
 							if (Raid.region != null) {
 								if (command.contains("@REGION")) {
 									command = command.replaceAll("@REGION", Raid.region.getId());
@@ -449,10 +407,8 @@ public class Raid {
 					}
 
 					try {
-						List<String> perPlayerCommands = Main.getInstance().getConfig()
-								.getStringList("RaidWinCommands.PerPlayer");
-						for (int i = 0; i < perPlayerCommands.size(); i++) {
-							String command = perPlayerCommands.get(i);
+						List<String> perPlayerCommands = Main.getInstance().getConfig().getStringList("RaidWinCommands.PerPlayer");
+						for (String command : perPlayerCommands) {
 							if (Raid.region != null) {
 								if (command.contains("@REGION")) {
 									command = command.replaceAll("@REGION", Raid.region.getId());
@@ -502,8 +458,7 @@ public class Raid {
 					Raid.bossEntity = entityOfMob;
 					Raid.MmEntityList.add(entityOfMob);
 					Raid.mobsSpawned++;
-				} catch (NullPointerException e) {
-				}
+				} catch (NullPointerException ignored) {}
 				return false;
 			} else {
 				return false;
@@ -566,10 +521,8 @@ public class Raid {
 
 				if (Main.getInstance().getConfig().getBoolean("UseWinLossCommands")) {
 					try {
-						List<String> globalCommands = Main.getInstance().getConfig()
-								.getStringList("RaidLoseCommands.Global");
-						for (int i = 0; i < globalCommands.size(); i++) {
-							String command = globalCommands.get(i);
+						List<String> globalCommands = Main.getInstance().getConfig().getStringList("RaidLoseCommands.Global");
+						for (String command : globalCommands) {
 							if (Raid.region != null) {
 								if (command.contains("@REGION")) {
 									command = command.replaceAll("@REGION", Raid.region.getId());
@@ -590,10 +543,8 @@ public class Raid {
 					}
 
 					try {
-						List<String> perPlayerCommands = Main.getInstance().getConfig()
-								.getStringList("RaidLoseCommands.PerPlayer");
-						for (int i = 0; i < perPlayerCommands.size(); i++) {
-							String command = perPlayerCommands.get(i);
+						List<String> perPlayerCommands = Main.getInstance().getConfig().getStringList("RaidLoseCommands.PerPlayer");
+						for (String command : perPlayerCommands) {
 							if (Raid.region != null) {
 								if (command.contains("@REGION")) {
 									command = command.replaceAll("@REGION", Raid.region.getId());
