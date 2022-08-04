@@ -1,13 +1,12 @@
 package me.ShermansWorld.RaidsPerRegion;
 
 import me.ShermansWorld.RaidsPerRegion.papi.PAPIHook;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import me.ShermansWorld.RaidsPerRegion.commands.RaidCommands;
 import me.ShermansWorld.RaidsPerRegion.commands.RaidsPerRegionCommands;
 import me.ShermansWorld.RaidsPerRegion.listeners.MobListener;
-import me.ShermansWorld.RaidsPerRegion.tabCompletion.RaidTabCompletion;
-import me.ShermansWorld.RaidsPerRegion.tabCompletion.RaidsPerRegionTabCompletion;
 
 public class Main extends JavaPlugin {
 	
@@ -25,15 +24,17 @@ public class Main extends JavaPlugin {
 		//this.getConfig().options().copyDefaults(false);
 		
 		//initialize commands
-		new RaidsPerRegionCommands(this);
-		this.getCommand("raidsperregion").setTabCompleter(new RaidsPerRegionTabCompletion());//Tab completer for raidspreregion command
-		new RaidCommands(this);
-		this.getCommand("raid").setTabCompleter(new RaidTabCompletion());//Tab completer for raid command
+		getCommand("raidsperregion").setExecutor(new RaidsPerRegionCommands(this));
+		getCommand("raid").setExecutor(new RaidCommands(this));
 	}
 
 	@Override
 	public void onDisable() {
 		hook.unregister();
+		HandlerList.unregisterAll(this);
+		getCommand("raidsperregion").setExecutor(null);
+		getCommand("raid").setExecutor(null);
+		getServer().getScheduler().cancelTasks(this);
 		super.onDisable();
 	}
 

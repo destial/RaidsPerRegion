@@ -11,16 +11,19 @@ import io.lumine.mythic.api.adapters.AbstractEntity;
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import me.ShermansWorld.RaidsPerRegion.Main;
 import me.ShermansWorld.RaidsPerRegion.Raid.Raid;
-import me.ShermansWorld.RaidsPerRegion.Raid.TownyHelper;
 import net.md_5.bungee.api.ChatColor;
+
+import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.color;
+import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.getConfigString;
 
 public final class MobListener implements Listener {
 	
 	@EventHandler
 	public void onMythicMobDead(MythicMobDeathEvent event) {
-		if (Raid.region != null || Raid.town != null) { // if a raid is happening
+		if (Raid.region != null) { // if a raid is happening
 			AbstractEntity mobEntity = event.getMob().getEntity();
 			if (Raid.MmEntityList.contains(mobEntity)) {
+				Raid.mobsLeft--;
 				LivingEntity killer = event.getKiller();
 				if (killer instanceof Player) {
 					Player player = (Player) killer;
@@ -32,8 +35,8 @@ public final class MobListener implements Listener {
 					if (Raid.bossSpawned) {
 						if (mobEntity.equals(Raid.bossEntity)) {
 							Raid.boss = "NONE"; // should end the raid
-							String killmsg = Main.getInstance().getConfig().getString("BossKilledMessage");
-							if (killmsg.contentEquals("") || killmsg == null) {
+							String killmsg = getConfigString("BossKilledMessage");
+							if (killmsg.contentEquals("")) {
 								return;
 							}
 							if (killmsg.contains("@PLAYER")) {
@@ -50,12 +53,7 @@ public final class MobListener implements Listener {
 									killmsg = killmsg.replaceAll("@REGION", Raid.region.getId());
 								}
 							}
-							if (killmsg.contains("@TOWN")) {
-								if (Raid.town != null) {
-									killmsg = TownyHelper.townPlaceHolder(killmsg);
-								}
-							}
-							Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', killmsg));
+							Bukkit.broadcastMessage(color(killmsg));
 						}
 					}
 				} else {
@@ -67,10 +65,7 @@ public final class MobListener implements Listener {
 			}
 			
 		}
-	
-		
 	}
-	
 }
 
 

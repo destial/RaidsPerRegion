@@ -36,10 +36,11 @@ public class PAPIHook extends PlaceholderExpansion {
                 int score = Raid.raidKills.getOrDefault(player.getName(), 0);
                 return "" + score;
             }
-            case "time":
-                return "" + Raid.minutes;
-            case "left":
-                return "" + Raid.mobsAlive;
+            case "goal" : return "" + Raid.goal;
+            case "total": return "" + Raid.totalKills;
+            case "time": return "" + (Raid.minutes > 10 ? "0" + Raid.minutes : Raid.minutes) + ":" + (Raid.countdown > 10 ? "0" + Raid.countdown : Raid.countdown);
+            case "left": return "" + Raid.mobsLeft;
+            default: break;
         }
         return "0";
     }
