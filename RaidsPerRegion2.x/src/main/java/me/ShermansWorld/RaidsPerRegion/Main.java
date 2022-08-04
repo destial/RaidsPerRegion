@@ -17,24 +17,26 @@ public class Main extends JavaPlugin {
 	@Override
 	public void onEnable() { //What runs when you start server
 		instance = this;
-		this.saveDefaultConfig();
+		saveDefaultConfig();
+
 		getServer().getPluginManager().registerEvents(new MobListener(), this);
-		hook = new PAPIHook();
-		hook.register();
-		//this.getConfig().options().copyDefaults(false);
-		
-		//initialize commands
 		getCommand("raidsperregion").setExecutor(new RaidsPerRegionCommands(this));
 		getCommand("raid").setExecutor(new RaidCommands(this));
+
+		hook = new PAPIHook();
+		hook.register();
+		super.onEnable();
 	}
 
 	@Override
 	public void onDisable() {
 		hook.unregister();
+
+		getServer().getScheduler().cancelTasks(this);
 		HandlerList.unregisterAll(this);
+
 		getCommand("raidsperregion").setExecutor(null);
 		getCommand("raid").setExecutor(null);
-		getServer().getScheduler().cancelTasks(this);
 		super.onDisable();
 	}
 

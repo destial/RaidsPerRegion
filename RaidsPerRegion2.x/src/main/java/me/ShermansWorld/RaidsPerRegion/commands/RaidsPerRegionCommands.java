@@ -24,6 +24,10 @@ public class RaidsPerRegionCommands implements CommandExecutor, TabExecutor {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (!sender.hasPermission("raidsperregion.reload")) {
+			sender.sendMessage(ChatColor.RED + "You do not have permission to do this");
+			return false;
+		}
 
 		if (args.length != 0) {
 			if (args[0].equalsIgnoreCase("source")) {
@@ -35,7 +39,7 @@ public class RaidsPerRegionCommands implements CommandExecutor, TabExecutor {
 				return false;
 			} else if (args[0].equalsIgnoreCase("reload")) {
 				if (!sender.hasPermission("raidsperregion.reload")) {
-					sender.sendMessage(ChatColor.RED + "[RaidsPerRegion] You do not have permission to do this");
+					sender.sendMessage(ChatColor.RED + "You do not have permission to do this");
 					return false;
 				}
 				plugin.reloadConfig();

@@ -26,6 +26,7 @@ import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.color;
 import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.getConfigBoolean;
 import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.getConfigSection;
 import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.getConfigString;
+import static me.ShermansWorld.RaidsPerRegion.Raid.Raid.parse;
 
 public class RaidCommands implements CommandExecutor, TabExecutor {
 	private final Main plugin;
@@ -36,9 +37,8 @@ public class RaidCommands implements CommandExecutor, TabExecutor {
 
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
-		if (!(sender instanceof Player)) {
-			return Collections.emptyList();
-		}
+		if (!(sender instanceof Player)) return Collections.emptyList();
+
 		Player p = (Player) sender; // Convert sender into player
 		World w = p.getWorld(); // Get world
 
@@ -83,7 +83,7 @@ public class RaidCommands implements CommandExecutor, TabExecutor {
 		// --------------------------------------------------------------------------------------------------------------
 
 		if (!sender.hasPermission("raidsperregion.raid")) {
-			sender.sendMessage(ChatColor.RED + "[RaidsPerRegion] You do not have permission to do this");
+			sender.sendMessage(ChatColor.RED + "You do not have permission to do this");
 			return false;
 		}
 
@@ -199,34 +199,14 @@ public class RaidCommands implements CommandExecutor, TabExecutor {
 			id[0] = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
 				if (!Raid.playersInRegion.isEmpty() && !Raid.runOnce) {
 					Raid.runOnce = true;
-					String raidAnnoucementTitle = getConfigString("RaidAnnoucementTitle");
-					String raidAnnoucementSubtitle = getConfigString("RaidAnnoucementSubtitle");
-					if (raidAnnoucementTitle.contains("@TIER")) {
-						raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@TIER", args[2]);
-					}
-					if (raidAnnoucementSubtitle.contains("@TIER")) {
-						raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@TIER", args[2]);
-					}
-					if (Raid.region != null) {
-						if (raidAnnoucementTitle.contains("@REGION")) {
-							raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@REGION", Raid.region.getId());
-						}
-						if (raidAnnoucementSubtitle.contains("@REGION")) {
-							raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@REGION", Raid.region.getId());
-						}
-					}
-					if (raidAnnoucementTitle.contains("@SENDER")) {
-						raidAnnoucementTitle = raidAnnoucementTitle.replaceAll("@SENDER", sender.getName());
-					}
-					if (raidAnnoucementSubtitle.contains("@SENDER")) {
-						raidAnnoucementSubtitle = raidAnnoucementSubtitle.replaceAll("@SENDER", sender.getName());
-					}
+					String raidAnnoucementTitle = parse(getConfigString("RaidAnnoucementTitle"), sender);
+					String raidAnnoucementSubtitle = parse(getConfigString("RaidAnnoucementSubtitle"), sender);
 					for (Player player : Raid.playersInRegion) {
 						player.sendTitle(color(raidAnnoucementTitle), color(raidAnnoucementSubtitle), 10, 60, 10);
 					}
 				}
 
-				if (Raid.isCancelledRaid(args[2], sender) || Raid.isWonRaid(args[2], Raid.goal, Raid.boss, Raid.mobLevel, sender) || Raid.isLostRaid(args[2], Raid.goal, Raid.minutes, sender)) {
+				if (Raid.isCancelledRaid(sender) || Raid.isWonRaid(Raid.goal, Raid.boss, Raid.mobLevel, sender) || Raid.isLostRaid(Raid.goal, Raid.minutes, sender)) {
 					plugin.getServer().getScheduler().cancelTask(id[0]);
 					Raid.timeReached = true;
 					Raid.boss = "NONE";

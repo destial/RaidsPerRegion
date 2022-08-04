@@ -27,11 +27,8 @@ public final class MobListener implements Listener {
 				LivingEntity killer = event.getKiller();
 				if (killer instanceof Player) {
 					Player player = (Player) killer;
-					if (!Raid.raidKills.containsKey(player.getName())) { // if the player isn't mapped, map them and set kills to one
-						Raid.raidKills.put(player.getName(), 1);
-			        } else {
-			        	Raid.raidKills.put(player.getName(), Raid.raidKills.get(player.getName()) + 1); // if already mapped, set kills to kills + 1
-			        }
+					Raid.raidKills.putIfAbsent(player.getName(), 0);
+					Raid.raidKills.put(player.getName(), Raid.raidKills.get(player.getName()) + 1); // if already mapped, set kills to kills + 1
 					if (Raid.bossSpawned) {
 						if (mobEntity.equals(Raid.bossEntity)) {
 							Raid.boss = "NONE"; // should end the raid
@@ -43,7 +40,7 @@ public final class MobListener implements Listener {
 								killmsg = killmsg.replaceAll("@PLAYER", player.getName());
 							}
 							if (killmsg.contains("@TIER")) {
-								killmsg = killmsg.replaceAll("@TIER", String.valueOf(Raid.tier));
+								killmsg = killmsg.replaceAll("@TIER", "" + Raid.tier);
 							}
 							if (killmsg.contains("@BOSSNAME")) {
 								killmsg = killmsg.replaceAll("@BOSSNAME", event.getMob().getDisplayName());

@@ -64,6 +64,21 @@ public class Raid {
 		return ChatColor.translateAlternateColorCodes('&',s);
 	}
 
+	public static String parse(String s, CommandSender sender) {
+		if (s.contains("@TIER")) {
+			s = s.replaceAll("@TIER", "" + Raid.tier);
+		}
+		if (Raid.region != null) {
+			if (s.contains("@REGION")) {
+				s = s.replaceAll("@REGION", Raid.region.getId());
+			}
+		}
+		if (s.contains("@SENDER")) {
+			s = s.replaceAll("@SENDER", sender.getName());
+		}
+		return s;
+	}
+
 	// resetVariables Method
 	public static void resetVariables() {
 		Raid.timeReached = false;
@@ -163,7 +178,7 @@ public class Raid {
 					Raid.MmEntityList.add(entityOfMob);
 					Raid.mobsSpawned++;
 					Raid.mobsLeft++;
-				} catch (NullPointerException ignored) {}
+				} catch (Exception ignored) {}
 			}
 			Raid.totalKills = scoreCounter;
 		}
@@ -218,30 +233,10 @@ public class Raid {
 	}
 
 	// isCancelledRaid Method
-	public static boolean isCancelledRaid(String tier, CommandSender sender) {
+	public static boolean isCancelledRaid(CommandSender sender) {
 		if (Main.cancelledRaid) {
-			String raidCancelledTitle = getConfigString("RaidCancelledTitle");
-			String raidCancelledSubtitle = getConfigString("RaidCancelledSubtitle");
-			if (raidCancelledTitle.contains("@TIER")) {
-				raidCancelledTitle = raidCancelledTitle.replaceAll("@TIER", tier);
-			}
-			if (raidCancelledSubtitle.contains("@TIER")) {
-				raidCancelledSubtitle = raidCancelledSubtitle.replaceAll("@TIER", tier);
-			}
-			if (Raid.region != null) {
-				if (raidCancelledTitle.contains("@REGION")) {
-					raidCancelledTitle = raidCancelledTitle.replaceAll("@REGION", Raid.region.getId());
-				}
-				if (raidCancelledSubtitle.contains("@REGION")) {
-					raidCancelledSubtitle = raidCancelledSubtitle.replaceAll("@REGION", Raid.region.getId());
-				}
-			}
-			if (raidCancelledTitle.contains("@SENDER")) {
-				raidCancelledTitle = raidCancelledTitle.replaceAll("@SENDER", sender.getName());
-			}
-			if (raidCancelledSubtitle.contains("@SENDER")) {
-				raidCancelledSubtitle = raidCancelledSubtitle.replaceAll("@SENDER", sender.getName());
-			}
+			String raidCancelledTitle = parse(getConfigString("RaidCancelledTitle"), sender);
+			String raidCancelledSubtitle = parse(getConfigString("RaidCancelledSubtitle"), sender);
 			for (Player player : Raid.playersInRegion) {
 				player.sendTitle(color(raidCancelledTitle), color(raidCancelledSubtitle), 10, 60, 10);
 			}
@@ -257,31 +252,11 @@ public class Raid {
 	}
 
 	// isWonRaid Method
-	public static boolean isWonRaid(String tier, int goal, String boss, int mobLevel, CommandSender sender) {
+	public static boolean isWonRaid(int goal, String boss, int mobLevel, CommandSender sender) {
 		if (Raid.totalKills >= goal) {
 			if (boss.equalsIgnoreCase("NONE")) {
-				String raidWinTitle = getConfigString("RaidWinTitle");
-				String raidWinSubtitle = getConfigString("RaidWinSubtitle");
-				if (raidWinTitle.contains("@TIER")) {
-					raidWinTitle = raidWinTitle.replaceAll("@TIER", tier);
-				}
-				if (raidWinSubtitle.contains("@TIER")) {
-					raidWinSubtitle = raidWinSubtitle.replaceAll("@TIER", tier);
-				}
-				if (Raid.region != null) {
-					if (raidWinTitle.contains("@REGION")) {
-						raidWinTitle = raidWinTitle.replaceAll("@REGION", Raid.region.getId());
-					}
-					if (raidWinSubtitle.contains("@REGION")) {
-						raidWinSubtitle = raidWinSubtitle.replaceAll("@REGION", Raid.region.getId());
-					}
-				}
-				if (raidWinTitle.contains("@SENDER")) {
-					raidWinTitle = raidWinTitle.replaceAll("@SENDER", sender.getName());
-				}
-				if (raidWinSubtitle.contains("@SENDER")) {
-					raidWinSubtitle = raidWinSubtitle.replaceAll("@SENDER", sender.getName());
-				}
+				String raidWinTitle = parse(getConfigString("RaidWinTitle"), sender);
+				String raidWinSubtitle = parse(getConfigString("RaidWinSubtitle"), sender);
 				for (Player player : Raid.playersInRegion) {
 					player.sendTitle(color(raidWinTitle), color(raidWinSubtitle), 10, 60, 10);
 				}
@@ -296,14 +271,7 @@ public class Raid {
 					try {
 						List<String> globalCommands = getConfigStringList("RaidWinCommands.Global");
 						for (String command : globalCommands) {
-							if (Raid.region != null) {
-								if (command.contains("@REGION")) {
-									command = command.replaceAll("@REGION", Raid.region.getId());
-								}
-							}
-							if (command.contains("@TIER")) {
-								command = command.replaceAll("@TIER", tier);
-							}
+							command = parse(command, sender);
 							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
 						}
 					} catch (NullPointerException e) {
@@ -313,14 +281,7 @@ public class Raid {
 					try {
 						List<String> perPlayerCommands = getConfigStringList("RaidWinCommands.PerPlayer");
 						for (String command : perPlayerCommands) {
-							if (Raid.region != null) {
-								if (command.contains("@REGION")) {
-									command = command.replaceAll("@REGION", Raid.region.getId());
-								}
-							}
-							if (command.contains("@TIER")) {
-								command = command.replaceAll("@TIER", tier);
-							}
+							command = parse(command, sender);
 							for (String key : Raid.raidKills.keySet()) {
 								String playerCommand = command;
 								if (command.contains("@PLAYER")) {
@@ -329,7 +290,7 @@ public class Raid {
 								}
 							}
 						}
-					} catch (NullPointerException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
@@ -354,7 +315,7 @@ public class Raid {
 					Raid.MmEntityList.add(entityOfMob);
 					Raid.mobsSpawned++;
 					Raid.mobsLeft++;
-				} catch (NullPointerException ignored) {}
+				} catch (Exception ignored) {}
 				return false;
 			} else {
 				return false;
@@ -365,30 +326,10 @@ public class Raid {
 	}
 
 	// isLostRaid Method
-	public static boolean isLostRaid(String tier, int goal, int minutes, CommandSender sender) {
+	public static boolean isLostRaid(int goal, int minutes, CommandSender sender) {
 		if (Raid.countdown == 0 && minutes == 0) {
-			String raidLoseTitle = getConfigString("RaidLoseTitle");
-			String raidLoseSubtitle = getConfigString("RaidLoseSubtitle");
-			if (raidLoseTitle.contains("@TIER")) {
-				raidLoseTitle = raidLoseTitle.replaceAll("@TIER", tier);
-			}
-			if (raidLoseSubtitle.contains("@TIER")) {
-				raidLoseSubtitle = raidLoseSubtitle.replaceAll("@TIER", tier);
-			}
-			if (Raid.region != null) {
-				if (raidLoseTitle.contains("@REGION")) {
-					raidLoseTitle = raidLoseTitle.replaceAll("@REGION", Raid.region.getId());
-				}
-				if (raidLoseSubtitle.contains("@REGION")) {
-					raidLoseSubtitle = raidLoseSubtitle.replaceAll("@REGION", Raid.region.getId());
-				}
-			}
-			if (raidLoseTitle.contains("@SENDER")) {
-				raidLoseTitle = raidLoseTitle.replaceAll("@SENDER", sender.getName());
-			}
-			if (raidLoseSubtitle.contains("@SENDER")) {
-				raidLoseSubtitle = raidLoseSubtitle.replaceAll("@SENDER", sender.getName());
-			}
+			String raidLoseTitle = parse(getConfigString("RaidLoseTitle"), sender);
+			String raidLoseSubtitle = parse(getConfigString("RaidLoseSubtitle"), sender);
 			if (Raid.totalKills < goal) {
 				// raid lost
 
@@ -408,31 +349,17 @@ public class Raid {
 					try {
 						List<String> globalCommands = getConfigStringList("RaidLoseCommands.Global");
 						for (String command : globalCommands) {
-							if (Raid.region != null) {
-								if (command.contains("@REGION")) {
-									command = command.replaceAll("@REGION", Raid.region.getId());
-								}
-							}
-							if (command.contains("@TIER")) {
-								command = command.replaceAll("@TIER", tier);
-							}
+							command = parse(command, sender);
 							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
 						}
-					} catch (NullPointerException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 
 					try {
 						List<String> perPlayerCommands = getConfigStringList("RaidLoseCommands.PerPlayer");
 						for (String command : perPlayerCommands) {
-							if (Raid.region != null) {
-								if (command.contains("@REGION")) {
-									command = command.replaceAll("@REGION", Raid.region.getId());
-								}
-							}
-							if (command.contains("@TIER")) {
-								command = command.replaceAll("@TIER", tier);
-							}
+							command = parse(command, sender);
 							for (String key : Raid.raidKills.keySet()) {
 								String playerCommand = command;
 								if (command.contains("@PLAYER")) {
@@ -441,7 +368,7 @@ public class Raid {
 								}
 							}
 						}
-					} catch (NullPointerException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}
